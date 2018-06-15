@@ -55,24 +55,19 @@ class scrypt_user_mongodb_client(object):
             return False
 
     async def user_login(self, user_email, password):
-        if not user_email:
-            return json({'error': 'Please specify your email to login to Scrypt'})
-        if not password:
-            return json({'error': 'Please type your password'})
-
         if self.check_user_exists(user_email) == True:
             try:
                 get_password = scrypt_user.objects(user_email=user_email)
                 encrypted_pw = get_password[0].password
             except Exception as e:
-                return("Error \n %s" % (e))
+                return json({'error': "Error %s" % (e)})
 
             if self.verify_password(password, encrypted_pw) == True:
                 api_token = self.generate_scrypt_token()
                 try:
                     scrypt_user.objects(user_email=user_email).update_one(upsert=False, set__scrypt_token=api_token)
                 except Exception as e:
-                    return("Error \n %s" % (e))
+                    return json({'error': "Error %s" % (e)})
                 
                 user_name = get_password[0].user_name
                 profile_pic = get_password[0].picture_path
@@ -83,9 +78,6 @@ class scrypt_user_mongodb_client(object):
             return json({'error': 'No user exists with this email'})
 
     async def user_logout(self, api_token):
-        if not api_token:
-            return json({'error': 'Could not authenticate'})
-
         if self.check_valid_api_token(api_token) == True:
             try:
                 scrypt_user.objects(scrypt_token=api_token).update_one(upsert=False, set__scrypt_token='NULL')
@@ -96,15 +88,6 @@ class scrypt_user_mongodb_client(object):
             return json({'error': 'Could not authenticate'})
 
     async def user_register(self, user_name, user_email, password, picture):
-        if not user_name:
-            return json({'error': 'Please enter your name'})
-        if not user_email:
-            return json({'error': 'Please specify your email to login to Scrypt'})
-        if not password:
-            return json({'error': 'Please enter a safe password to login to your Scrypt account'})
-        if not picture:
-            return json({'error': 'Please choose an avatar for your Scrypt profile'})
-
         if self.check_user_exists(user_email) == True:
             return json({'error': 'User already exists with this email address'})
         else:
